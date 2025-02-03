@@ -20,7 +20,7 @@ struct gc_edge_buffer {
 
 // Lock-free.
 struct gc_edge_buffer_list {
-  struct gc_edge_buffer *head;
+  _Atomic(struct gc_edge_buffer *)head;
 };
 
 // With a lock.

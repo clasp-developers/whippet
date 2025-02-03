@@ -17,7 +17,7 @@
 // consumer phase starts.
 struct root_worklist {
   size_t size;
-  size_t read;
+  _Atomic size_t read;
   size_t write;
   struct gc_root *buf;
 };
