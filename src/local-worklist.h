@@ -34,12 +34,12 @@ local_worklist_full(struct local_worklist *q) {
 }
 static inline void
 local_worklist_push(struct local_worklist *q, struct gc_ref v) {
-  ASSERT(!local_worklist_full(q));
+  GC_ASSERT(!local_worklist_full(q));
   q->data[q->write++ & LOCAL_WORKLIST_MASK] = v;
 }
 static inline struct gc_ref
 local_worklist_pop(struct local_worklist *q) {
-  ASSERT(!local_worklist_empty(q));
+  GC_ASSERT(!local_worklist_empty(q));
   return q->data[q->read++ & LOCAL_WORKLIST_MASK];
 }
 

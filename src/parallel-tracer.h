@@ -118,7 +118,7 @@ gc_tracer_init(struct gc_tracer *tracer, struct gc_heap *heap,
   pthread_cond_init(&tracer->cond, NULL);
   root_worklist_init(&tracer->roots);
   size_t desired_worker_count = parallelism;
-  ASSERT(desired_worker_count);
+  GC_ASSERT(desired_worker_count);
   if (desired_worker_count > TRACE_WORKERS_MAX_COUNT)
     desired_worker_count = TRACE_WORKERS_MAX_COUNT;
   if (!trace_worker_init(&tracer->workers[0], heap, tracer, 0))
@@ -183,7 +183,7 @@ tracer_share(struct gc_trace_worker *worker) {
 
 static inline void
 gc_trace_worker_enqueue(struct gc_trace_worker *worker, struct gc_ref ref) {
-  ASSERT(gc_ref_is_heap_object(ref));
+  GC_ASSERT(gc_ref_is_heap_object(ref));
   if (local_worklist_full(&worker->local))
     tracer_share(worker);
   local_worklist_push(&worker->local, ref);
@@ -191,13 +191,13 @@ gc_trace_worker_enqueue(struct gc_trace_worker *worker, struct gc_ref ref) {
 
 static struct gc_ref
 tracer_steal_from_worker(struct gc_tracer *tracer, size_t id) {
-  ASSERT(id < tracer->worker_count);
+  GC_ASSERT(id < tracer->worker_count);
   return shared_worklist_steal(&tracer->workers[id].shared);
 }
 
 static int
 tracer_can_steal_from_worker(struct gc_tracer *tracer, size_t id) {
-  ASSERT(id < tracer->worker_count);
+  GC_ASSERT(id < tracer->worker_count);
   return shared_worklist_can_steal(&tracer->workers[id].shared);
 }
 

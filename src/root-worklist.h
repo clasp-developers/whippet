@@ -42,7 +42,7 @@ root_worklist_init(struct root_worklist *q) {
 
 static inline void
 root_worklist_push(struct root_worklist *q, struct gc_root root) {
-  if (UNLIKELY(q->write == q->size)) {
+  if (GC_UNLIKELY(q->write == q->size)) {
     q->size *= 2;
     root_worklist_alloc(q);
   }

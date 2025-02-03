@@ -79,7 +79,7 @@ simple_worklist_grow(struct simple_worklist *q) {
   
 static inline void
 simple_worklist_push(struct simple_worklist *q, struct gc_ref p) {
-  if (UNLIKELY(q->write - q->read == q->size)) {
+  if (GC_UNLIKELY(q->write - q->read == q->size)) {
     if (!simple_worklist_grow(q))
       GC_CRASH();
   }
@@ -99,7 +99,7 @@ simple_worklist_push_many(struct simple_worklist *q, struct gc_ref *pv,
 
 static inline struct gc_ref
 simple_worklist_pop(struct simple_worklist *q) {
-  if (UNLIKELY(q->read == q->write))
+  if (GC_UNLIKELY(q->read == q->write))
     return gc_ref_null();
   return simple_worklist_get(q, q->read++);
 }

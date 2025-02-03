@@ -8,6 +8,8 @@
 
 #define GC_CRASH() __builtin_trap()
 
+#define STATIC_ASSERT_EQ(a, b) _Static_assert((a) == (b), "eq")
+
 #if GC_DEBUG
 #define GC_ASSERT(x) do { if (GC_UNLIKELY(!(x))) GC_CRASH(); } while (0)
 #define GC_UNREACHABLE() GC_CRASH()

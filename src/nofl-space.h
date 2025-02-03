@@ -1562,7 +1562,7 @@ nofl_space_evacuate(struct nofl_space *space, _Atomic uint8_t *metadata, uint8_t
     if (fwd.state == GC_FORWARDING_STATE_NOT_FORWARDED)
       // Remove evacuation aborted; remote will mark and enqueue.
       return 0;
-    ASSERT(fwd.state == GC_FORWARDING_STATE_FORWARDED);
+    GC_ASSERT(fwd.state == GC_FORWARDING_STATE_FORWARDED);
     // Fall through.
   case GC_FORWARDING_STATE_FORWARDED:
     // The object has been evacuated already.  Update the edge;
@@ -1609,7 +1609,7 @@ nofl_space_forward_if_evacuated(struct nofl_space *space,
     if (fwd.state == GC_FORWARDING_STATE_NOT_FORWARDED)
       // Remote evacuation aborted; remote will mark and enqueue.
       return 1;
-    ASSERT(fwd.state == GC_FORWARDING_STATE_FORWARDED);
+    GC_ASSERT(fwd.state == GC_FORWARDING_STATE_FORWARDED);
     // Fall through.
   case GC_FORWARDING_STATE_FORWARDED:
     gc_edge_update(edge, gc_ref(gc_atomic_forward_address(&fwd)));

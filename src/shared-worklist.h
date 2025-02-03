@@ -32,8 +32,8 @@ static const size_t shared_worklist_release_byte_threshold = 256 * 1024;
 
 static int
 shared_worklist_buf_init(struct shared_worklist_buf *buf, unsigned log_size) {
-  ASSERT(log_size >= shared_worklist_buf_min_log_size);
-  ASSERT(log_size <= shared_worklist_buf_max_log_size);
+  GC_ASSERT(log_size >= shared_worklist_buf_min_log_size);
+  GC_ASSERT(log_size <= shared_worklist_buf_max_log_size);
   size_t size = (1 << log_size) * sizeof(uintptr_t);
   void *mem = gc_platform_acquire_memory(size, 0);
   if (!mem) {
