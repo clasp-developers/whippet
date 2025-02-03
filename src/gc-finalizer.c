@@ -89,7 +89,7 @@ enum finalizer_state {
 
 struct gc_finalizer {
   GC_EMBEDDER_FINALIZER_HEADER
-  enum finalizer_state state;
+  _Atomic enum finalizer_state state;
   struct gc_ref object;
   struct gc_ref closure;
   struct gc_finalizer *next;
@@ -100,13 +100,13 @@ struct gc_finalizer {
 #define BUCKET_COUNT 32
 
 struct gc_finalizer_table {
-  size_t finalizer_count;
-  struct gc_finalizer* buckets[BUCKET_COUNT];
+  _Atomic size_t finalizer_count;
+  _Atomic(struct gc_finalizer*) buckets[BUCKET_COUNT];
 };
 
 struct gc_finalizer_state {
   gc_finalizer_callback have_finalizers;
-  struct gc_finalizer *fired;
+  _Atomic(struct gc_finalizer *) fired;
   size_t fired_this_cycle;
   size_t table_count;
   struct gc_finalizer_table tables[0];
@@ -130,7 +130,7 @@ struct gc_finalizer_state* gc_make_finalizer_state(void) {
   return ret;
 }
 
-static void finalizer_list_push(struct gc_finalizer **loc,
+static void finalizer_list_push(_Atomic(struct gc_finalizer *)*loc,
                                 struct gc_finalizer *head) {
   struct gc_finalizer *tail = atomic_load_explicit(loc, memory_order_acquire);
   do {
@@ -138,7 +138,7 @@ static void finalizer_list_push(struct gc_finalizer **loc,
   } while (!atomic_compare_exchange_weak(loc, &tail, head));
 }
 
-static struct gc_finalizer* finalizer_list_pop(struct gc_finalizer **loc) {
+static struct gc_finalizer* finalizer_list_pop(_Atomic(struct gc_finalizer *)*loc) {
   struct gc_finalizer *head = atomic_load_explicit(loc, memory_order_acquire);
   do {
     if (!head) return NULL;
@@ -151,7 +151,7 @@ static void add_finalizer_to_table(struct gc_finalizer_table *table,
                                    struct gc_finalizer *f) {
   size_t count = atomic_fetch_add_explicit(&table->finalizer_count, 1,
                                            memory_order_relaxed);
-  struct gc_finalizer **loc = &table->buckets[count % BUCKET_COUNT];
+  _Atomic(struct gc_finalizer *)*loc = &table->buckets[count % BUCKET_COUNT];
   finalizer_list_push(loc, f);
 }
 
