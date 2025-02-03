@@ -26,8 +26,8 @@ GC_API_ void gc_ephemeron_init(struct gc_mutator *mut,
 GC_API_ struct gc_ref gc_ephemeron_key(struct gc_ephemeron *ephemeron);
 GC_API_ struct gc_ref gc_ephemeron_value(struct gc_ephemeron *ephemeron);
 
-GC_API_ struct gc_ephemeron* gc_ephemeron_chain_head(struct gc_ephemeron **loc);
-GC_API_ void gc_ephemeron_chain_push(struct gc_ephemeron **loc,
+GC_API_ struct gc_ephemeron* gc_ephemeron_chain_head(_Atomic(struct gc_ephemeron *)*loc);
+GC_API_ void gc_ephemeron_chain_push(_Atomic(struct gc_ephemeron *)*loc,
                                      struct gc_ephemeron *ephemeron);
 GC_API_ struct gc_ephemeron* gc_ephemeron_chain_next(struct gc_ephemeron *ephemeron);
 GC_API_ void gc_ephemeron_mark_dead(struct gc_ephemeron *ephemeron);

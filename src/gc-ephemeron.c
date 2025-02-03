@@ -166,9 +166,9 @@
 ////////////////////////////////////////////////////////////////////////
 
 static void
-ephemeron_list_push(struct gc_ephemeron **loc,
+ephemeron_list_push(_Atomic(struct gc_ephemeron *)*loc,
                     struct gc_ephemeron *head,
-                    struct gc_ephemeron** (*get_next)(struct gc_ephemeron*)) {
+                    _Atomic(struct gc_ephemeron*)* (*get_next)(struct gc_ephemeron*)) {
   struct gc_ephemeron *tail = atomic_load_explicit(loc, memory_order_acquire);
   while (1) {
     // There must be no concurrent readers of HEAD, a precondition that
@@ -181,8 +181,8 @@ ephemeron_list_push(struct gc_ephemeron **loc,
 }
 
 static struct gc_ephemeron*
-ephemeron_list_pop(struct gc_ephemeron **loc,
-                   struct gc_ephemeron** (*get_next)(struct gc_ephemeron*)) {
+ephemeron_list_pop(_Atomic(struct gc_ephemeron *)*loc,
+                   _Atomic(struct gc_ephemeron *)* (*get_next)(struct gc_ephemeron*)) {
   struct gc_ephemeron *head = atomic_load_explicit(loc, memory_order_acquire);
   while (head) {
     // Precondition: the result of get_next on an ephemeron is never
@@ -195,8 +195,8 @@ ephemeron_list_pop(struct gc_ephemeron **loc,
 }
 
 static struct gc_ephemeron*
-ephemeron_list_follow(struct gc_ephemeron **loc,
-                      struct gc_ephemeron** (*get_next)(struct gc_ephemeron*),
+ephemeron_list_follow(_Atomic(struct gc_ephemeron *)*loc,
+                      _Atomic(struct gc_ephemeron *)* (*get_next)(struct gc_ephemeron*),
                       int (*is_live)(struct gc_ephemeron*)) {
   struct gc_ephemeron *head = atomic_load_explicit(loc, memory_order_acquire);
   if (!head) return NULL;
@@ -238,13 +238,13 @@ enum {
 
 struct gc_ephemeron {
   GC_EMBEDDER_EPHEMERON_HEADER
-  uint8_t state;
+  _Atomic uint8_t state;
   unsigned epoch;
-  struct gc_ephemeron *chain;
-  struct gc_ephemeron *pending;
-  struct gc_ephemeron *resolved;
-  struct gc_ref key;
-  struct gc_ref value;
+  _Atomic(struct gc_ephemeron *)chain;
+  _Atomic(struct gc_ephemeron *)pending;
+  _Atomic(struct gc_ephemeron *)resolved;
+  _Atomic struct gc_ref key;
+  _Atomic struct gc_ref value;
 };
 
 size_t gc_ephemeron_size(void) { return sizeof(struct gc_ephemeron); }
@@ -260,38 +260,39 @@ struct gc_edge gc_ephemeron_value_edge(struct gc_ephemeron *e) {
 // Operations on the user-controlled chain field
 ////////////////////////////////////////////////////////////////////////
 
-static struct gc_ephemeron** ephemeron_chain(struct gc_ephemeron *e) {
+static _Atomic(struct gc_ephemeron*)* ephemeron_chain(struct gc_ephemeron *e) {
   return &e->chain;
 }
 static int ephemeron_is_dead(struct gc_ephemeron *e) {
-  return !atomic_load_explicit(&e->key.value, memory_order_acquire);
+  struct gc_ref key = atomic_load_explicit(&e->key, memory_order_acquire);
+  return !key.value;
 }
 static int ephemeron_is_not_dead(struct gc_ephemeron *e) {
   return !ephemeron_is_dead(e);
 }
 
-void gc_ephemeron_chain_push(struct gc_ephemeron **loc,
+void gc_ephemeron_chain_push(_Atomic(struct gc_ephemeron *)*loc,
                              struct gc_ephemeron *e) {
   ephemeron_list_push(loc, e, ephemeron_chain);
 }  
-static struct gc_ephemeron* follow_chain(struct gc_ephemeron **loc) {
+static struct gc_ephemeron* follow_chain(_Atomic(struct gc_ephemeron *)*loc) {
   return ephemeron_list_follow(loc, ephemeron_chain, ephemeron_is_not_dead);
 }  
-struct gc_ephemeron* gc_ephemeron_chain_head(struct gc_ephemeron **loc) {
+struct gc_ephemeron* gc_ephemeron_chain_head(_Atomic(struct gc_ephemeron *)*loc) {
   return follow_chain(loc);
 }
 struct gc_ephemeron* gc_ephemeron_chain_next(struct gc_ephemeron *e) {
   return follow_chain(ephemeron_chain(e));
 }
 void gc_ephemeron_mark_dead(struct gc_ephemeron *e) {
-  atomic_store_explicit(&e->key.value, 0, memory_order_release);
+  atomic_store_explicit(&e->key, gc_ref(0), memory_order_release);
 }
 
 ////////////////////////////////////////////////////////////////////////
 // Operations on the GC-managed pending link
 ////////////////////////////////////////////////////////////////////////
 
-static struct gc_ephemeron** ephemeron_pending(struct gc_ephemeron *e) {
+static _Atomic(struct gc_ephemeron*)* ephemeron_pending(struct gc_ephemeron *e) {
   return &e->pending;
 }
 static uint8_t ephemeron_state(struct gc_ephemeron *e) {
@@ -301,10 +302,10 @@ static int ephemeron_is_pending(struct gc_ephemeron *e) {
   return ephemeron_state(e) == EPHEMERON_STATE_PENDING;
 }
 
-static void push_pending(struct gc_ephemeron **loc, struct gc_ephemeron *e) {
+static void push_pending(_Atomic(struct gc_ephemeron *)*loc, struct gc_ephemeron *e) {
   ephemeron_list_push(loc, e, ephemeron_pending);
 }  
-static struct gc_ephemeron* follow_pending(struct gc_ephemeron **loc) {
+static struct gc_ephemeron* follow_pending(_Atomic(struct gc_ephemeron *)*loc) {
   return ephemeron_list_follow(loc, ephemeron_pending, ephemeron_is_pending);
 }  
 
@@ -312,13 +313,13 @@ static struct gc_ephemeron* follow_pending(struct gc_ephemeron **loc) {
 // Operations on the GC-managed resolved link
 ////////////////////////////////////////////////////////////////////////
 
-static struct gc_ephemeron** ephemeron_resolved(struct gc_ephemeron *e) {
+static _Atomic(struct gc_ephemeron*)* ephemeron_resolved(struct gc_ephemeron *e) {
   return &e->resolved;
 }
-static void push_resolved(struct gc_ephemeron **loc, struct gc_ephemeron *e) {
+static void push_resolved(_Atomic(struct gc_ephemeron *)*loc, struct gc_ephemeron *e) {
   ephemeron_list_push(loc, e, ephemeron_resolved);
 }  
-static struct gc_ephemeron* pop_resolved(struct gc_ephemeron **loc) {
+static struct gc_ephemeron* pop_resolved(_Atomic(struct gc_ephemeron *)*loc) {
   return ephemeron_list_pop(loc, ephemeron_resolved);
 }  
 
@@ -327,7 +328,7 @@ static struct gc_ephemeron* pop_resolved(struct gc_ephemeron **loc) {
 ////////////////////////////////////////////////////////////////////////
 
 struct gc_ref gc_ephemeron_key(struct gc_ephemeron *e) {
-  return gc_ref(atomic_load_explicit(&e->key.value, memory_order_acquire));
+  return atomic_load_explicit(&e->key, memory_order_acquire);
 }
 
 struct gc_ref gc_ephemeron_value(struct gc_ephemeron *e) {
@@ -339,10 +340,10 @@ struct gc_ref gc_ephemeron_value(struct gc_ephemeron *e) {
 ////////////////////////////////////////////////////////////////////////
 
 struct gc_pending_ephemerons {
-  struct gc_ephemeron* resolved;
+  _Atomic(struct gc_ephemeron*) resolved;
   size_t nbuckets;
   double scale;
-  struct gc_ephemeron* buckets[0];
+  _Atomic(struct gc_ephemeron*) buckets[0];
 };
 
 static const size_t MIN_PENDING_EPHEMERONS_SIZE = 32;
@@ -391,7 +392,7 @@ gc_prepare_pending_ephemerons(struct gc_pending_ephemerons *state,
   return new_state;
 }
 
-static struct gc_ephemeron**
+static _Atomic(struct gc_ephemeron*)*
 pending_ephemeron_bucket(struct gc_pending_ephemerons *state,
                          struct gc_ref ref) {
   uintptr_t hash = hash_address(gc_ref_value(ref));
@@ -403,7 +404,7 @@ pending_ephemeron_bucket(struct gc_pending_ephemerons *state,
 static void
 add_pending_ephemeron(struct gc_pending_ephemerons *state,
                       struct gc_ephemeron *e) {
-  struct gc_ephemeron **bucket = pending_ephemeron_bucket(state, e->key);
+  _Atomic(struct gc_ephemeron *)*bucket = pending_ephemeron_bucket(state, e->key);
   atomic_store_explicit(&e->state, EPHEMERON_STATE_PENDING,
                         memory_order_release);
   push_pending(bucket, e);
@@ -421,7 +422,7 @@ static void maybe_resolve_ephemeron(struct gc_pending_ephemerons *state,
 // fromspace ref.
 void gc_resolve_pending_ephemerons(struct gc_ref obj, struct gc_heap *heap) {
   struct gc_pending_ephemerons *state = gc_heap_pending_ephemerons(heap);
-  struct gc_ephemeron **bucket = pending_ephemeron_bucket(state, obj);
+  _Atomic(struct gc_ephemeron *)*bucket = pending_ephemeron_bucket(state, obj);
   for (struct gc_ephemeron *link = follow_pending(bucket);
        link;
        link = follow_pending(&link->pending)) {
@@ -550,12 +551,12 @@ gc_sweep_pending_ephemerons(struct gc_pending_ephemerons *state,
   size_t start = state->nbuckets * 1.0 * shard / nshards;
   size_t end = state->nbuckets * 1.0 * (shard + 1) / nshards;
   for (size_t idx = start; idx < end; idx++) {
-    struct gc_ephemeron **bucket = &state->buckets[idx];
+    _Atomic(struct gc_ephemeron *)*bucket = &state->buckets[idx];
     for (struct gc_ephemeron *e = follow_pending(bucket);
          e;
          e = follow_pending(&e->pending)) {
       // PENDING -> TRACED, but dead.
-      atomic_store_explicit(&e->key.value, 0, memory_order_release);
+      atomic_store_explicit(&e->key, gc_ref(0), memory_order_release);
       atomic_store_explicit(&e->state, EPHEMERON_STATE_TRACED,
                             memory_order_release);
     }
