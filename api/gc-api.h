@@ -201,7 +201,7 @@ static inline int gc_object_is_old_generation(struct gc_mutator *mut,
     uintptr_t base = addr & ~(alignment - 1);
     size_t granule_size = gc_allocator_small_granule_size();
     uintptr_t granule = (addr & (alignment - 1)) / granule_size;
-    uint8_t *byte_loc = (uint8_t*)(base + granule);
+    _Atomic uint8_t *byte_loc = (_Atomic uint8_t*)(base + granule);
     uint8_t byte = atomic_load_explicit(byte_loc, memory_order_relaxed);
     return byte & gc_old_generation_check_alloc_table_bit_pattern();
   }
@@ -242,7 +242,7 @@ static inline int gc_write_barrier_fast(struct gc_mutator *mut, struct gc_ref ob
     uintptr_t addr = gc_ref_value(obj);
     uintptr_t base = addr & ~(card_table_alignment - 1);
     uintptr_t card = (addr & (card_table_alignment - 1)) / card_size;
-    atomic_store_explicit((uint8_t*)(base + card), 1, memory_order_relaxed);
+    atomic_store_explicit((_Atomic uint8_t*)(base + card), 1, memory_order_relaxed);
     return 0;
   }
   case GC_WRITE_BARRIER_FIELD: {
@@ -259,7 +259,7 @@ static inline int gc_write_barrier_fast(struct gc_mutator *mut, struct gc_ref ob
     uintptr_t field = (addr & (field_table_alignment - 1)) / sizeof(uintptr_t);
     uintptr_t log_byte = field / fields_per_byte;
     uint8_t log_bit = first_bit_pattern << (field % fields_per_byte);
-    uint8_t *byte_loc = (uint8_t*)(base + table_offset + log_byte);
+    _Atomic uint8_t *byte_loc = (_Atomic uint8_t*)(base + table_offset + log_byte);
     uint8_t byte = atomic_load_explicit(byte_loc, memory_order_relaxed);
     return !(byte & log_bit);
   }
@@ -283,7 +283,7 @@ static inline void gc_write_barrier(struct gc_mutator *mut, struct gc_ref obj,
 GC_API_ void gc_pin_object(struct gc_mutator *mut, struct gc_ref obj);
 
 GC_API_ void gc_safepoint_slow(struct gc_mutator *mut) GC_NEVER_INLINE;
-GC_API_ int* gc_safepoint_flag_loc(struct gc_mutator *mut);
+GC_API_ _Atomic int* gc_safepoint_flag_loc(struct gc_mutator *mut);
 static inline int gc_should_stop_for_safepoint(struct gc_mutator *mut) {
   switch (gc_cooperative_safepoint_kind()) {
   case GC_COOPERATIVE_SAFEPOINT_NONE:
