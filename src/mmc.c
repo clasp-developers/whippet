@@ -26,6 +26,7 @@
 #include "serial-tracer.h"
 #endif
 #include "spin.h"
+#include "tagged-ref.h"
 #include "mmc-attrs.h"
 
 #define LARGE_OBJECT_THRESHOLD 8192

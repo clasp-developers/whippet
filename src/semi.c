@@ -10,6 +10,7 @@
 
 #include "gc-platform.h"
 #include "heap-sizer.h"
+#include "tagged-ref.h"
 #include "semi-attrs.h"
 #include "large-object-space.h"
 

@@ -25,6 +25,7 @@
 #include "serial-tracer.h"
 #endif
 #include "spin.h"
+#include "tagged-ref.h"
 #include "pcc-attrs.h"
 
 struct gc_heap {

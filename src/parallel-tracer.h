@@ -14,6 +14,7 @@
 #include "shared-worklist.h"
 #include "spin.h"
 #include "tracer.h"
+#include "tagged-ref.h"
 
 #ifdef VERBOSE_LOGGING
 #define LOG(...) fprintf (stderr, "LOG: " __VA_ARGS__)
