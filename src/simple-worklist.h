@@ -26,7 +26,7 @@ simple_worklist_alloc(size_t size) {
     DEBUG("Failed to allocate %zu bytes", size);
     return NULL;
   }
-  return mem;
+  return (struct gc_ref*)mem;
 }
 
 static int

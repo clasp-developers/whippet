@@ -39,7 +39,7 @@ static struct extents*
 extents_allocate(size_t capacity) {
   size_t byte_size =
     sizeof(struct extents) + sizeof(struct extent_range) * capacity;
-  struct extents *ret = malloc(byte_size);
+  struct extents *ret = (struct extents*)malloc(byte_size);
   if (!ret) __builtin_trap();
   memset(ret, 0, byte_size);
   ret->capacity = capacity;

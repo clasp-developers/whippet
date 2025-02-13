@@ -41,7 +41,7 @@ gc_growable_heap_sizer_on_gc(struct gc_growable_heap_sizer *sizer,
 static struct gc_growable_heap_sizer*
 gc_make_growable_heap_sizer(struct gc_heap *heap, double multiplier) {
   struct gc_growable_heap_sizer *sizer;
-  sizer = malloc(sizeof(*sizer));
+  sizer = (struct gc_growable_heap_sizer*)malloc(sizeof(*sizer));
   if (!sizer)
     GC_CRASH();
   memset(sizer, 0, sizeof(*sizer));

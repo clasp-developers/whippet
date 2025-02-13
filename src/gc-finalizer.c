@@ -122,7 +122,7 @@ struct gc_finalizer_state* gc_make_finalizer_state(void) {
   size_t ntables = gc_finalizer_priority_count();
   size_t size = (sizeof(struct gc_finalizer_state) +
                  sizeof(struct gc_finalizer_table) * ntables);
-  struct gc_finalizer_state *ret = malloc(size);
+  struct gc_finalizer_state *ret = (struct gc_finalizer_state*)malloc(size);
   if (!ret)
     return NULL;
   memset(ret, 0, size);

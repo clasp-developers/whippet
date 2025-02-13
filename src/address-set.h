@@ -23,9 +23,9 @@ static void hash_set_clear(struct hash_set *set) {
 // Size must be a power of 2.
 static void hash_set_init(struct hash_set *set, size_t size) {
   set->size = size;
-  set->data = malloc(sizeof(uintptr_t) * size);
+  set->data = (uintptr_t*)malloc(sizeof(uintptr_t) * size);
   if (!set->data) GC_CRASH();
-  set->bits = malloc(size / 8);
+  set->bits = (uint8_t*)malloc(size / 8);
   if (!set->bits) GC_CRASH();
   hash_set_clear(set);
 }
@@ -183,7 +183,7 @@ struct address_set_for_each_data {
   void *data;
 };
 static int address_set_do_for_each(uintptr_t v, void *data) {
-  struct address_set_for_each_data *for_each_data = data;
+  struct address_set_for_each_data *for_each_data = (struct address_set_for_each_data*)data;
   for_each_data->f(unhash_address(v), for_each_data->data);
   return 0;
 }
@@ -200,7 +200,7 @@ struct address_set_find_data {
   void *data;
 };
 static int address_set_do_find(uintptr_t v, void *data) {
-  struct address_set_find_data *find_data = data;
+  struct address_set_find_data *find_data = (struct address_set_find_data*)data;
   return find_data->f(unhash_address(v), find_data->data);
 }
 static inline void address_set_find(struct address_set *set,

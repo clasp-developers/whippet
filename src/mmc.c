@@ -258,7 +258,7 @@ static inline void tracer_visit(struct gc_edge edge, struct gc_heap *heap,
                                 void *trace_data) GC_ALWAYS_INLINE;
 static inline void
 tracer_visit(struct gc_edge edge, struct gc_heap *heap, void *trace_data) {
-  struct gc_trace_worker *worker = trace_data;
+  struct gc_trace_worker *worker = (struct gc_trace_worker*)trace_data;
   if (trace_edge(heap, edge, gc_trace_worker_data(worker)))
     gc_trace_worker_enqueue(worker, gc_edge_ref(edge));
 }
@@ -336,8 +336,8 @@ trace_one_conservatively(struct gc_ref ref, struct gc_heap *heap,
     // conservative-by-default heap.  But, we make an exception for
     // ephemerons.
     if (GC_UNLIKELY(nofl_is_ephemeron(ref))) {
-      gc_trace_ephemeron(gc_ref_heap_object(ref), tracer_visit, heap,
-                         worker);
+      gc_trace_ephemeron((struct gc_ephemeron*)gc_ref_heap_object(ref),
+                         tracer_visit, heap, worker);
       return;
     }
     bytes = nofl_space_object_size(heap_nofl_space(heap), ref);
@@ -616,7 +616,7 @@ determine_collection_kind(struct gc_heap *heap,
 static void
 enqueue_conservative_roots(uintptr_t low, uintptr_t high,
                            struct gc_heap *heap, void *data) {
-  int *possibly_interior = data;
+  int *possibly_interior = (int*)data;
   gc_tracer_add_root(&heap->tracer,
                      gc_root_conservative_edges(low, high, *possibly_interior));
 }
@@ -883,7 +883,7 @@ allocate_large(struct gc_mutator *mut, size_t size) {
 
 static void
 collect_for_small_allocation(void *mut) {
-  trigger_collection(mut, GC_COLLECTION_ANY, 0);
+  trigger_collection((struct gc_mutator*)mut, GC_COLLECTION_ANY, 0);
 }
 
 void*
@@ -950,7 +950,7 @@ gc_allocate_ephemeron(struct gc_mutator *mut) {
   struct gc_ref ret =
     gc_ref_from_heap_object(gc_allocate(mut, gc_ephemeron_size()));
   nofl_space_set_ephemeron_flag(ret);
-  return gc_ref_heap_object(ret);
+  return (struct gc_ephemeron*)gc_ref_heap_object(ret);
 }
 
 void
@@ -973,7 +973,7 @@ gc_heap_ephemeron_trace_epoch(struct gc_heap *heap) {
 
 struct gc_finalizer*
 gc_allocate_finalizer(struct gc_mutator *mut) {
-  return gc_allocate(mut, gc_finalizer_size());
+  return (struct gc_finalizer*)gc_allocate(mut, gc_finalizer_size());
 }
 
 void
@@ -1019,7 +1019,7 @@ gc_option_from_string(const char *str) {
 
 struct gc_options*
 gc_allocate_options(void) {
-  struct gc_options *ret = malloc(sizeof(struct gc_options));
+  struct gc_options *ret = (struct gc_options*)malloc(sizeof(struct gc_options));
   gc_init_common_options(&ret->common);
   return ret;
 }
@@ -1123,7 +1123,7 @@ gc_init(const struct gc_options *options, struct gc_stack_addr *stack_base,
                  NOFL_METADATA_BYTE_LOGGED_0);
   }
 
-  *heap = calloc(1, sizeof(struct gc_heap));
+  *heap = (struct gc_heap*)calloc(1, sizeof(struct gc_heap));
   if (!*heap) GC_CRASH();
 
   if (!heap_init(*heap, options))
@@ -1147,7 +1147,7 @@ gc_init(const struct gc_options *options, struct gc_stack_addr *stack_base,
                                (*heap)->background_thread))
     GC_CRASH();
 
-  *mut = calloc(1, sizeof(struct gc_mutator));
+  *mut = (struct gc_mutator*)calloc(1, sizeof(struct gc_mutator));
   if (!*mut) GC_CRASH();
   gc_stack_init(&(*mut)->stack, stack_base);
   add_mutator(*heap, *mut);
@@ -1160,7 +1160,7 @@ gc_init(const struct gc_options *options, struct gc_stack_addr *stack_base,
 struct gc_mutator*
 gc_init_for_thread(struct gc_stack_addr *stack_base,
                                       struct gc_heap *heap) {
-  struct gc_mutator *ret = calloc(1, sizeof(struct gc_mutator));
+  struct gc_mutator *ret = (struct gc_mutator*)calloc(1, sizeof(struct gc_mutator));
   if (!ret)
     GC_CRASH();
   gc_stack_init(&ret->stack, stack_base);

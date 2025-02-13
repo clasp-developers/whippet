@@ -1706,7 +1706,7 @@ nofl_space_object_size(struct nofl_space *space, struct gc_ref ref) {
 
 static struct nofl_slab*
 nofl_allocate_slabs(size_t nslabs) {
-  return gc_platform_acquire_memory(nslabs * NOFL_SLAB_SIZE, NOFL_SLAB_SIZE);
+  return (struct nofl_slab*)gc_platform_acquire_memory(nslabs * NOFL_SLAB_SIZE, NOFL_SLAB_SIZE);
 }
 
 static void
@@ -1716,7 +1716,7 @@ nofl_space_add_slabs(struct nofl_space *space, struct nofl_slab *slabs,
   size_t additional_size = nslabs * sizeof(struct nofl_slab*);
   space->extents = extents_adjoin(space->extents, slabs,
                                   nslabs * sizeof(struct nofl_slab));
-  space->slabs = realloc(space->slabs, old_size + additional_size);
+  space->slabs = (struct nofl_slab**)realloc(space->slabs, old_size + additional_size);
   if (!space->slabs)
     GC_CRASH();
   while (nslabs--)
@@ -1799,7 +1799,7 @@ nofl_space_advance_page_out_queue(void *data) {
   // queue).  In this task, invoked by the background thread, we age queue
   // items, except that we don't page out yet, as it could be that some other
   // background task will need to pull pages back in.
-  struct nofl_space *space = data;
+  struct nofl_space *space = (struct nofl_space*)data;
   struct gc_lock lock = nofl_space_lock(space);
   for (int age = NOFL_PAGE_OUT_QUEUE_SIZE - 3; age >= 0; age--) {
     struct nofl_block_ref block =
@@ -1815,7 +1815,7 @@ static void
 nofl_space_page_out_blocks(void *data) {
   // This task is invoked by the background thread after other tasks.  It
   // actually pages out blocks that reached the end of the queue.
-  struct nofl_space *space = data;
+  struct nofl_space *space = (struct nofl_space*)data;
   struct gc_lock lock = nofl_space_lock(space);
   int age = NOFL_PAGE_OUT_QUEUE_SIZE - 2;
   while (1) {

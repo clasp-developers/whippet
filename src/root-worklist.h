@@ -24,7 +24,7 @@ struct root_worklist {
 
 void
 root_worklist_alloc(struct root_worklist *q) {
-  q->buf = realloc(q->buf, q->size * sizeof(struct gc_root));
+  q->buf = (struct gc_root*)realloc(q->buf, q->size * sizeof(struct gc_root));
   if (!q->buf) {
     perror("Failed to grow root worklist");
     GC_CRASH();

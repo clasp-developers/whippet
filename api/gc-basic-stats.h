@@ -34,14 +34,14 @@ static inline uint64_t gc_basic_stats_now(void) {
 }
 
 static inline void gc_basic_stats_init(void *data, size_t heap_size) {
-  struct gc_basic_stats *stats = data;
+  struct gc_basic_stats *stats = (struct gc_basic_stats*)data;
   memset(stats, 0, sizeof(*stats));
   stats->last_time_usec = gc_basic_stats_now();
   stats->heap_size = stats->max_heap_size = heap_size;
 }
 
 static inline void gc_basic_stats_requesting_stop(void *data) {
-  struct gc_basic_stats *stats = data;
+  struct gc_basic_stats *stats = (struct gc_basic_stats*)data;
   uint64_t now = gc_basic_stats_now();
   stats->elapsed_mutator_usec += now - stats->last_time_usec;
   stats->last_time_usec = now;
@@ -51,7 +51,7 @@ static inline void gc_basic_stats_mutators_stopped(void *data) {}
 
 static inline void gc_basic_stats_prepare_gc(void *data,
                                              enum gc_collection_kind kind) {
-  struct gc_basic_stats *stats = data;
+  struct gc_basic_stats *stats = (struct gc_basic_stats*)data;
   if (kind == GC_COLLECTION_MINOR)
     stats->minor_collection_count++;
   else
@@ -64,7 +64,7 @@ static inline void gc_basic_stats_ephemerons_traced(void *data) {}
 static inline void gc_basic_stats_finalizers_traced(void *data) {}
 
 static inline void gc_basic_stats_restarting_mutators(void *data) {
-  struct gc_basic_stats *stats = data;
+  struct gc_basic_stats *stats = (struct gc_basic_stats*)data;
   uint64_t now = gc_basic_stats_now();
   uint64_t pause_time = now - stats->last_time_usec;
   stats->elapsed_collector_usec += pause_time;
@@ -82,14 +82,14 @@ static inline void gc_basic_stats_mutator_restarted(void *mutator_data) {}
 static inline void gc_basic_stats_mutator_removed(void *mutator_data) {}
 
 static inline void gc_basic_stats_heap_resized(void *data, size_t size) {
-  struct gc_basic_stats *stats = data;
+  struct gc_basic_stats *stats = (struct gc_basic_stats*)data;
   stats->heap_size = size;
   if (size > stats->max_heap_size)
     stats->max_heap_size = size;
 }
 
 static inline void gc_basic_stats_live_data_size(void *data, size_t size) {
-  struct gc_basic_stats *stats = data;
+  struct gc_basic_stats *stats = (struct gc_basic_stats*)data;
   if (size > stats->max_live_data_size)
     stats->max_live_data_size = size;
 }

@@ -105,7 +105,7 @@ gc_adaptive_heap_sizer_on_gc(struct gc_adaptive_heap_sizer *sizer,
 
 static void
 gc_adaptive_heap_sizer_background_task(void *data) {
-  struct gc_adaptive_heap_sizer *sizer = data;
+  struct gc_adaptive_heap_sizer *sizer = (struct gc_adaptive_heap_sizer*)data;
   gc_adaptive_heap_sizer_lock(sizer);
   uint64_t bytes_allocated =
     sizer->get_allocation_counter(sizer->heap);
@@ -129,7 +129,7 @@ gc_make_adaptive_heap_sizer(struct gc_heap *heap, double expansiveness,
                             void (*set_heap_size)(struct gc_heap*, size_t),
                             struct gc_background_thread *thread) {
   struct gc_adaptive_heap_sizer *sizer;
-  sizer = malloc(sizeof(*sizer));
+  sizer = (struct gc_adaptive_heap_sizer*)malloc(sizeof(*sizer));
   if (!sizer)
     GC_CRASH();
   memset(sizer, 0, sizeof(*sizer));

@@ -8,7 +8,7 @@ struct gc_edge {
 };
 
 static inline struct gc_edge gc_edge(void* addr) {
-  return (struct gc_edge){addr};
+  return (struct gc_edge){(struct gc_ref*)addr};
 }
 static inline struct gc_ref gc_edge_ref(struct gc_edge edge) {
   return *edge.dst;

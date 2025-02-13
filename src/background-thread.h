@@ -40,7 +40,7 @@ struct gc_background_thread {
 
 static void*
 gc_background_thread(void *data) {
-  struct gc_background_thread *thread = data;
+  struct gc_background_thread *thread = (struct gc_background_thread*)data;
   pthread_mutex_lock(&thread->lock);
   while (thread->state == GC_BACKGROUND_THREAD_STARTING)
     pthread_cond_wait(&thread->cond, &thread->lock);
@@ -63,7 +63,7 @@ gc_background_thread(void *data) {
 static struct gc_background_thread*
 gc_make_background_thread(void) {
   struct gc_background_thread *thread;
-  thread = malloc(sizeof(*thread));
+  thread = (struct gc_background_thread*)malloc(sizeof(*thread));
   if (!thread)
     GC_CRASH();
   memset(thread, 0, sizeof(*thread));
@@ -97,7 +97,7 @@ gc_background_thread_add_task(struct gc_background_thread *thread,
   if (thread->count == thread->capacity) {
     size_t new_capacity = thread->capacity * 2 + 1;
     struct gc_background_task *new_tasks =
-      realloc(thread->tasks, sizeof(struct gc_background_task) * new_capacity);
+      (struct gc_background_task*)realloc(thread->tasks, sizeof(struct gc_background_task) * new_capacity);
     if (!new_tasks) {
       perror("ran out of space for background tasks!");
       GC_CRASH();

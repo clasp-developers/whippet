@@ -360,7 +360,7 @@ gc_make_pending_ephemerons(size_t byte_size) {
     nbuckets = MIN_PENDING_EPHEMERONS_SIZE;
 
   struct gc_pending_ephemerons *ret =
-    malloc(pending_ephemerons_byte_size(nbuckets));
+    (struct gc_pending_ephemerons*)malloc(pending_ephemerons_byte_size(nbuckets));
   if (!ret)
     return NULL;
 

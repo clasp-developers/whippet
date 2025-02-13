@@ -108,7 +108,7 @@ gc_field_set_acquire_buffer(struct gc_field_set *set) {
   if (ret) return ret;
 
   // atomic inc count
-  ret = malloc(sizeof(*ret));
+  ret = (struct gc_edge_buffer*)malloc(sizeof(*ret));
   if (!ret) {
     perror("Failed to allocate remembered set");
     GC_CRASH();

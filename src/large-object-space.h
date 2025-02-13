@@ -305,7 +305,7 @@ large_object_space_remove_from_freelist(struct large_object_space *space,
 static void
 large_object_space_sweep_one(uintptr_t addr, uintptr_t node_bits,
                              void *data) {
-  struct large_object_space *space = data;
+  struct large_object_space *space = (struct large_object_space*)data;
   struct large_object_node *node = (struct large_object_node*) node_bits;
   if (!node->value.is_live)
     return;
@@ -318,7 +318,7 @@ large_object_space_sweep_one(uintptr_t addr, uintptr_t node_bits,
 
 static void
 large_object_space_process_quarantine(void *data) {
-  struct large_object_space *space = data;
+  struct large_object_space *space = (struct large_object_space*)data;
   pthread_mutex_lock(&space->lock);
   pthread_mutex_lock(&space->object_tree_lock);
   for (size_t idx = 0; idx < large_object_freelist_num_size_classes(); idx++) {

@@ -28,9 +28,9 @@ static void hash_map_clear(struct hash_map *map) {
 // Size must be a power of 2.
 static void hash_map_init(struct hash_map *map, size_t size) {
   map->size = size;
-  map->data = malloc(sizeof(struct hash_map_entry) * size);
+  map->data = (struct hash_map_entry*)malloc(sizeof(struct hash_map_entry) * size);
   if (!map->data) GC_CRASH();
-  map->bits = malloc(size / 8);
+  map->bits = (uint8_t*)malloc(size / 8);
   if (!map->bits) GC_CRASH();
   hash_map_clear(map);
 }
@@ -197,7 +197,7 @@ struct address_map_for_each_data {
   void *data;
 };
 static void address_map_do_for_each(uintptr_t k, uintptr_t v, void *data) {
-  struct address_map_for_each_data *for_each_data = data;
+  struct address_map_for_each_data *for_each_data = (struct address_map_for_each_data*)data;
   for_each_data->f(unhash_address(k), v, for_each_data->data);
 }
 static inline void address_map_for_each (struct address_map *map,

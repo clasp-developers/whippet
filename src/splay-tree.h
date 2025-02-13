@@ -84,7 +84,7 @@ struct SPLAY_TREE {
 
 static inline struct SPLAY_NODE*
 SPLAY_NODE_NEW(SPLAY_KEY_SPAN key, SPLAY_VALUE value) {
-  struct SPLAY_NODE *ret = malloc(sizeof(*ret));
+  struct SPLAY_NODE *ret = (struct SPLAY_NODE*)malloc(sizeof(*ret));
   if (!ret) GC_CRASH();
   ret->key = key;
   ret->value = value;
