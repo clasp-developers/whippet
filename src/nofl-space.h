@@ -958,13 +958,7 @@ nofl_space_remember_edge(struct nofl_space *space, struct gc_ref obj,
     return 0;
   _Atomic uint8_t* loc = nofl_field_logged_byte(edge);
   uint8_t bit = nofl_field_logged_bit(edge);
-  uint8_t byte = atomic_load_explicit(loc, memory_order_acquire);
-  do {
-    if (byte & bit) return 0;
-  } while (!atomic_compare_exchange_weak_explicit(loc, &byte, byte|bit,
-                                                  memory_order_acq_rel,
-                                                  memory_order_acquire));
-  return 1;
+  return !(atomic_fetch_or_explicit(loc, bit, memory_order_acq_rel) & bit);
 }
 
 static void
@@ -1455,15 +1449,8 @@ nofl_space_pin_object(struct nofl_space *space, struct gc_ref ref) {
   if (gc_has_conservative_intraheap_edges())
     return;
   _Atomic uint8_t *metadata = nofl_metadata_byte_for_object(ref);
-  uint8_t byte = atomic_load_explicit(metadata, memory_order_relaxed);
-  if (byte & NOFL_METADATA_BYTE_PINNED)
-    return;
-  uint8_t new_byte;
-  do {
-    new_byte = byte | NOFL_METADATA_BYTE_PINNED;
-  } while (!atomic_compare_exchange_weak_explicit(metadata, &byte, new_byte,
-                                                  memory_order_acq_rel,
-                                                  memory_order_acquire));
+  atomic_fetch_or_explicit(metadata, NOFL_METADATA_BYTE_PINNED,
+                           memory_order_acq_rel);
 }
 
 static inline uint8_t
