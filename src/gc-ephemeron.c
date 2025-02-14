@@ -332,7 +332,7 @@ struct gc_ref gc_ephemeron_key(struct gc_ephemeron *e) {
 }
 
 struct gc_ref gc_ephemeron_value(struct gc_ephemeron *e) {
-  return ephemeron_is_dead(e) ? gc_ref_null() : e->value;
+  return ephemeron_is_dead(e) ? gc_ref_null() : atomic_load_explicit(&e->value, memory_order_acquire);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -364,11 +364,11 @@ gc_make_pending_ephemerons(size_t byte_size) {
   if (!ret)
     return NULL;
 
-  ret->resolved = NULL;
+  atomic_store(&ret->resolved, NULL);
   ret->nbuckets = nbuckets;
   ret->scale = nbuckets / pow(2.0, sizeof(uintptr_t) * 8);
   for (size_t i = 0; i < nbuckets; i++)
-    ret->buckets[i] = NULL;
+    atomic_store(&ret->buckets[i], NULL);
 
   return ret;
 }
@@ -404,7 +404,7 @@ pending_ephemeron_bucket(struct gc_pending_ephemerons *state,
 static void
 add_pending_ephemeron(struct gc_pending_ephemerons *state,
                       struct gc_ephemeron *e) {
-  _Atomic(struct gc_ephemeron *)*bucket = pending_ephemeron_bucket(state, e->key);
+  _Atomic(struct gc_ephemeron *)*bucket = pending_ephemeron_bucket(state, atomic_load_explicit(&e->key, memory_order_acquire));
   atomic_store_explicit(&e->state, EPHEMERON_STATE_PENDING,
                         memory_order_release);
   push_pending(bucket, e);
@@ -426,7 +426,7 @@ void gc_resolve_pending_ephemerons(struct gc_ref obj, struct gc_heap *heap) {
   for (struct gc_ephemeron *link = follow_pending(bucket);
        link;
        link = follow_pending(&link->pending)) {
-    if (gc_ref_value(obj) == gc_ref_value(link->key)) {
+    if (gc_ref_value(obj) == gc_ref_value(atomic_load(&link->key))) {
       gc_visit_ephemeron_key(gc_ephemeron_key_edge(link), heap);
       // PENDING -> RESOLVED, if it was pending.
       maybe_resolve_ephemeron(state, link);
@@ -456,8 +456,8 @@ void gc_trace_ephemeron(struct gc_ephemeron *e,
 
   // CLAIMED[!epoch] -> CLAIMED[epoch].
   e->epoch = epoch;
-  e->pending = NULL;
-  e->resolved = NULL;
+  atomic_store(&e->pending, NULL);
+  atomic_store(&e->resolved, NULL);
 
   // Trace chain successors, eliding any intermediate dead links.  Note
   // that there is a race between trace-time evacuation of the next link
@@ -576,9 +576,9 @@ void gc_ephemeron_init_internal(struct gc_heap *heap,
   // value.
   ephemeron->state = EPHEMERON_STATE_TRACED;
   ephemeron->epoch = gc_heap_ephemeron_trace_epoch(heap) - 1;
-  ephemeron->chain = NULL;
-  ephemeron->pending = NULL;
-  ephemeron->resolved = NULL;
+  atomic_store(&ephemeron->chain, NULL);
+  atomic_store(&ephemeron->pending, NULL);
+  atomic_store(&ephemeron->resolved, NULL);
   ephemeron->key = key;
   ephemeron->value = value;
 }

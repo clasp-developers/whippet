@@ -148,8 +148,8 @@ gc_field_set_clear(struct gc_field_set *set,
   struct gc_edge_buffer *full = set->full.head;
   // Clear the full and partly full sets now so that if a collector
   // wanted to it could re-add an edge to the remembered set.
-  set->partly_full.list.head = NULL;
-  set->full.head = NULL;
+  atomic_store(&set->partly_full.list.head, NULL);
+  atomic_store(&set->full.head, NULL);
   struct gc_edge_buffer *buf, *next;
   for (buf = partly_full; buf; buf = next) {
     next = buf->next;

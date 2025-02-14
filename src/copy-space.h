@@ -113,7 +113,7 @@ copy_space_object_region(struct gc_ref obj) {
 #define COPY_SPACE_PAGE_OUT_QUEUE_SIZE 4
 
 struct copy_space_block_list {
-  struct copy_space_block *head;
+  _Atomic(struct copy_space_block *)head;
 };
 
 struct copy_space_block_stack {
@@ -131,11 +131,11 @@ struct copy_space {
   struct copy_space_block_stack empty;
   struct copy_space_block_stack partly_full;
   struct copy_space_block_list full ALIGNED_TO_AVOID_FALSE_SHARING;
-  size_t allocated_bytes;
-  size_t fragmentation;
+  _Atomic size_t allocated_bytes;
+  _Atomic size_t fragmentation;
   struct copy_space_block_stack paged_out[COPY_SPACE_PAGE_OUT_QUEUE_SIZE]
     ALIGNED_TO_AVOID_FALSE_SHARING;
-  ssize_t bytes_to_page_out ALIGNED_TO_AVOID_FALSE_SHARING;
+  _Atomic ssize_t bytes_to_page_out ALIGNED_TO_AVOID_FALSE_SHARING;
   // The rest of these members are only changed rarely and with the heap
   // lock.
   uint8_t active_region ALIGNED_TO_AVOID_FALSE_SHARING;
