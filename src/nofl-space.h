@@ -358,19 +358,19 @@ nofl_block_is_null(struct nofl_block_ref block) {
 static uintptr_t
 nofl_block_has_flag(struct nofl_block_ref block, uintptr_t flags) {
   GC_ASSERT(!nofl_block_is_null(block));
-  return nofl_block_summary_has_flag(block.summary, flags);
+  return nofl_block_summary_has_flag(block.summary, (enum nofl_block_summary_flag)flags);
 }
 
 static void
 nofl_block_set_flag(struct nofl_block_ref block, uintptr_t flags) {
   GC_ASSERT(!nofl_block_is_null(block));
-  nofl_block_summary_set_flag(block.summary, flags);
+  nofl_block_summary_set_flag(block.summary, (enum nofl_block_summary_flag)flags);
 }
 
 static void
 nofl_block_clear_flag(struct nofl_block_ref block, uintptr_t flags) {
   GC_ASSERT(!nofl_block_is_null(block));
-  nofl_block_summary_clear_flag(block.summary, flags);
+  nofl_block_summary_clear_flag(block.summary, (enum nofl_block_summary_flag)flags);
 }
 
 static struct nofl_block_ref
