@@ -713,6 +713,7 @@ nofl_allocator_next_hole_in_block(struct nofl_allocator *alloc,
 
   if (sweep == limit)
     return 0;
+  GC_ASSERT(sweep < limit);
 
   GC_ASSERT((sweep & (NOFL_GRANULE_SIZE - 1)) == 0);
   uint8_t* metadata = (uint8_t*)nofl_metadata_byte_for_addr(sweep);
@@ -725,6 +726,11 @@ nofl_allocator_next_hole_in_block(struct nofl_allocator *alloc,
   while (limit_granules && (metadata[0] & sweep_mask)) {
     // Object survived collection; skip over it and continue sweeping.
     size_t object_granules = nofl_space_live_object_granules(metadata);
+    //GC_ASSERT(object_granules <= limit_granules);
+    if (object_granules > limit_granules) {
+      alloc->alloc = alloc->sweep = limit;
+      return 0;
+    }
     sweep += object_granules * NOFL_GRANULE_SIZE;
     limit_granules -= object_granules;
     metadata += object_granules;
