@@ -131,17 +131,14 @@ gc_trace_worker_call_with_data(void (*f)(struct gc_tracer *tracer,
 
 static inline int
 do_trace(struct gc_heap *heap, struct gc_edge edge, struct gc_ref ref,
-         struct gc_trace_worker_data *data) {
+         ptrdiff_t displacement, struct gc_trace_worker_data *data) {
   if (GC_LIKELY(nofl_space_contains(heap_nofl_space(heap), ref)))
-    return nofl_space_evacuate_or_mark_object(heap_nofl_space(heap), edge, ref,
+    return nofl_space_evacuate_or_mark_object(heap_nofl_space(heap), edge, ref, displacement,
                                               &data->allocator);
-  else {
-    ptrdiff_t displacement = gc_ref_displacement(ref);
-    struct gc_ref und_ref = gc_ref_undisplace(ref, displacement);
-    if (large_object_space_contains_with_lock(heap_large_object_space(heap), und_ref))
-      return large_object_space_mark(heap_large_object_space(heap), und_ref);
-  } // not in nofl or large object spaces
-  return gc_extern_space_visit(heap_extern_space(heap), edge, ref);
+  else if (large_object_space_contains_with_lock(heap_large_object_space(heap), ref))
+    return large_object_space_mark(heap_large_object_space(heap), ref);
+  else
+    return gc_extern_space_visit(heap_extern_space(heap), edge, ref);
 }
 
 static inline int
@@ -151,12 +148,15 @@ trace_edge(struct gc_heap *heap, struct gc_edge edge,
   if (gc_ref_is_null(ref) || gc_ref_is_immediate(ref))
     return 0;
 
-  int is_new = do_trace(heap, edge, ref, data);
+  ptrdiff_t displacement = gc_ref_displacement(ref);
+  struct gc_ref und_ref = gc_ref_undisplace(ref, displacement);
+
+  int is_new = do_trace(heap, edge, und_ref, displacement, data);
 
   if (is_new &&
       GC_UNLIKELY(atomic_load_explicit(&heap->check_pending_ephemerons,
                                        memory_order_relaxed)))
-    gc_resolve_pending_ephemerons(ref, heap);
+    gc_resolve_pending_ephemerons(und_ref, heap);
 
   return is_new;
 }
@@ -260,11 +260,16 @@ gc_heap_set_extern_space(struct gc_heap *heap, struct gc_extern_space *space) {
 
 static inline void tracer_visit(struct gc_edge edge, struct gc_heap *heap,
                                 void *trace_data) GC_ALWAYS_INLINE;
+
 static inline void
 tracer_visit(struct gc_edge edge, struct gc_heap *heap, void *trace_data) {
   struct gc_trace_worker *worker = (struct gc_trace_worker*)trace_data;
-  if (trace_edge(heap, edge, gc_trace_worker_data(worker)))
-    gc_trace_worker_enqueue(worker, gc_edge_ref(edge));
+  if (trace_edge(heap, edge, gc_trace_worker_data(worker))) {
+    struct gc_ref ref = gc_edge_ref(edge);
+    ptrdiff_t displacement = gc_ref_displacement(ref);
+    struct gc_ref und_ref = gc_ref_undisplace(ref, displacement);
+    gc_trace_worker_enqueue(worker, und_ref);
+  }
 }
 
 static inline int

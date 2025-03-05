@@ -1491,9 +1491,8 @@ static inline int
 nofl_space_evacuate(struct nofl_space *space, _Atomic uint8_t *metadata, uint8_t byte,
                     struct gc_edge edge,
                     struct gc_ref old_ref,
+                    ptrdiff_t displacement,
                     struct nofl_allocator *evacuate) {
-  ptrdiff_t displacement = gc_ref_displacement(old_ref);
-  struct gc_ref und_old = gc_ref_undisplace(old_ref, displacement);
   struct gc_atomic_forward fwd = gc_atomic_forward_begin(old_ref);
 
   if (fwd.state == GC_FORWARDING_STATE_NOT_FORWARDED)
@@ -1525,9 +1524,9 @@ nofl_space_evacuate(struct nofl_space *space, _Atomic uint8_t *metadata, uint8_t
       // Whee, it works!  Copy object contents before committing, as we don't
       // know what part of the object (if any) will be overwritten by the
       // commit.
-      memcpy(gc_ref_heap_object(new_ref), gc_ref_heap_object(und_old),
+      memcpy(gc_ref_heap_object(new_ref), gc_ref_heap_object(old_ref),
              object_granules * NOFL_GRANULE_SIZE);
-      gc_atomic_forward_commit(&fwd, new_dsp);
+      gc_atomic_forward_commit(&fwd, new_ref);
       // Now update extent metadata, and indicate to the caller that
       // the object's fields need to be traced.
       uint8_t *new_metadata = (uint8_t*)nofl_metadata_byte_for_object(new_ref);
@@ -1574,19 +1573,18 @@ static inline int
 nofl_space_evacuate_or_mark_object(struct nofl_space *space,
                                    struct gc_edge edge,
                                    struct gc_ref old_ref,
+                                   ptrdiff_t displacement,
                                    struct nofl_allocator *evacuate) {
-  ptrdiff_t displacement = gc_ref_displacement(old_ref);
-  struct gc_ref undisplaced_ref = gc_ref_undisplace(old_ref, displacement);
-  _Atomic uint8_t *metadata = nofl_metadata_byte_for_object(undisplaced_ref);
+  _Atomic uint8_t *metadata = nofl_metadata_byte_for_object(old_ref);
   uint8_t byte = *metadata;
   if (byte & space->marked_mask)
     return 0;
 
-  if (nofl_space_should_evacuate(space, byte, undisplaced_ref))
+  if (nofl_space_should_evacuate(space, byte, old_ref))
     return nofl_space_evacuate(space, metadata, byte, edge, old_ref,
-                               evacuate);
+                               displacement, evacuate);
 
-  return nofl_space_set_nonempty_mark(space, metadata, byte, undisplaced_ref);
+  return nofl_space_set_nonempty_mark(space, metadata, byte, old_ref);
 }
 
 static inline int
