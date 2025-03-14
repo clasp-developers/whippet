@@ -17,7 +17,7 @@ static inline int gc_mutator_conservative_roots_may_be_interior(void) {
   return 1;
 }
 static inline int gc_has_global_conservative_roots(void) {
-  return GC_CONSERVATIVE_ROOTS;
+  return 0; // GC_CONSERVATIVE_ROOTS;
 }
 static inline int gc_has_conservative_intraheap_edges(void) {
   return GC_CONSERVATIVE_TRACE;
