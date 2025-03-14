@@ -1753,6 +1753,7 @@ nofl_space_shrink(struct nofl_space *space, size_t bytes) {
       pending = atomic_fetch_sub(&space->pending_unavailable_bytes,
                                  NOFL_BLOCK_SIZE);
       pending -= NOFL_BLOCK_SIZE;
+      --avail;
     }
   }
 
