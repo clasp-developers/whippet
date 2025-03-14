@@ -31,7 +31,6 @@ static inline struct gc_ref gc_ref_from_heap_object(void *obj) {
   return gc_ref_from_heap_object_or_null(obj);
 }
 static inline void* gc_ref_heap_object(struct gc_ref ref) {
-  GC_ASSERT(gc_ref_is_heap_object(ref));
   return (void *) gc_ref_value(ref);
 }
 
